@@ -22,6 +22,9 @@
 *.la
 *.lo
 
+#VScodeWorkspaces
+*.code-workspace
+
 # Shared objects (inc. Windows DLLs)
 *.dll
 *.so
