@@ -150,7 +150,7 @@ void setLEDs()
   JsonArray lights = jsonDocument["lights"];
 
   for(JsonVariant light : lights) {  
-    JsonArray rgb = light["RGB"];
+    JsonArray rgb = light["color"];
     int lightnum = light["LightNum"];
     int red = rgb[0];
     int green = rgb[1];
@@ -169,7 +169,7 @@ void setLED()
 {
   String body = server.arg("plain");
   deserializeJson(jsonDocument, body);
-  JsonArray rgb =  jsonDocument["RGB"];
+  JsonArray rgb =  jsonDocument["color"];
   int lightNumber = jsonDocument["LightNum"];
   int red = rgb[0];
   int green = rgb[1];
@@ -202,7 +202,7 @@ void getLEDs()
     if (Red + Green + Blue > 0){
       JsonObject light = lightsJson.createNestedObject();
       light["LightNum"] = pixelnumber;
-      JsonArray rgb = light.createNestedArray("RGB");
+      JsonArray rgb = light.createNestedArray("color");
       rgb[0] = Red;
       rgb[1] = Green;
       rgb[2] = Blue;
