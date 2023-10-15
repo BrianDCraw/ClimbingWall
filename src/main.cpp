@@ -21,7 +21,8 @@ WebServer server(80);
 Adafruit_NeoPixel pixels(NUM_OF_LEDS, PIN, NEO_RGB + NEO_KHZ800);
 
 // JSON data buffer
-StaticJsonDocument<8000> jsonDocument;
+StaticJsonDocument<20000> jsonDocument;
+StaticJsonDocument<20000> fileJson;
 char buffer[8000];
 
 void handleNotFound()
@@ -86,10 +87,10 @@ void handleNotFound()
 void connectToWiFi() 
 {
   WiFi.mode(WIFI_STA);
-  wifiMulti.addAP("test", "test");
-  wifiMulti.addAP("test", "test");
-  wifiMulti.addAP("test", "test");
-  wifiMulti.addAP("test", "test");
+  wifiMulti.addAP("JBHome", "n0ne5ha11pa55");
+  wifiMulti.addAP("JBHome5G", "n0ne5ha11pa55");
+  wifiMulti.addAP("JBHomeAP", "n0ne5ha11pa55");
+  wifiMulti.addAP("JBHome5GAP", "n0ne5ha11pa55");
   
 Serial.println("Connecting Wifi...");
    
@@ -128,18 +129,23 @@ Serial.println("Connecting Wifi...");
 }
 
 //Saving a routed sent to this API
-void saveRoute()
+void getRoutes()
+{ 
+    String fullpath = "/assets/routes.json";
+    File file = SPIFFS.open(fullpath,"r");
+    String contents = file.readString(); 
+    file.close();
+    deserializeJson(fileJson, contents);
+    server.send(200, "application/json",contents);
+}
+void updateRoutes()
 { 
     String body = server.arg("plain");
-    deserializeJson(jsonDocument, body);
-
-    String filename = jsonDocument["RouteName"];
-    String fullpath = "/scripts/"+(String)filename +".json";
-
-    File file = SPIFFS.open(fullpath,FILE_WRITE);
+    deserializeJson(jsonDocument, body); 
+    String fullpath = "/assets/routes.json";
+    File file = SPIFFS.open(fullpath,"w");
     file.println(body);
     server.send(200, "application/json", "{Result:Sucess}");
-
 }
 
 void setLEDs() 
@@ -219,7 +225,8 @@ void setup_routing() {
   server.on("/setLEDs", HTTP_POST, setLEDs);
   server.on("/getLights",HTTP_GET, getLEDs);
   server.on("/setLED",HTTP_POST,setLED);
-  server.on("/saveRoute", HTTP_POST, saveRoute);
+  server.on("/getRoutes", HTTP_GET, getRoutes);
+  server.on("/updateRoutes", HTTP_POST, updateRoutes);
   // start server
   server.onNotFound(handleNotFound);
   server.enableCrossOrigin(true);
