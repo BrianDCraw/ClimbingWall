@@ -57,51 +57,26 @@
     { "RouteName": "Route 11",
       "RouteId": 11,
           "Difficulty": "",
-          "Lights" : [{"LightNum":176,"color":[0,25,0]},{"LightNum":174,"color":[0,25,0]},{"LightNum":244,"color":[0,25,0]},{"LightNum":170,"color":[0,25,0]},{"LightNum":220,"color":[0,25,0]},{"LightNum":185,"color":[0,25,0]},{"LightNum":128,"color":[0,0,25]},{"LightNum":226,"color":[0,0,25]},{"LightNum":156,"color":[0,0,25]}]
+          "Lights" : [{"LightNum":176,"color":[0,25,0]},{"LightNum":210,"color":[0,25,0]},{"LightNum":144,"color":[0,25,0]},{"LightNum":241,"color":[0,25,0]},{"LightNum":202,"color":[0,25,0]},{"LightNum":235,"color":[0,25,0]},{"LightNum":226,"color":[0,0,25]},{"LightNum":156,"color":[0,0,25]}]
     },
     { "RouteName": "Route 12",
       "RouteId": 12,
           "Difficulty": "",
-          "Lights" : [{"LightNum":176,"color":[0,25,0]},{"LightNum":210,"color":[0,25,0]},{"LightNum":144,"color":[0,25,0]},{"LightNum":241,"color":[0,25,0]},{"LightNum":202,"color":[0,25,0]},{"LightNum":235,"color":[0,25,0]},{"LightNum":226,"color":[0,0,25]},{"LightNum":156,"color":[0,0,25]}]
+          "Lights" : [{"LightNum":176,"color":[0,25,0]},{"LightNum":137,"color":[0,25,0]},{"LightNum":207,"color":[0,25,0]},{"LightNum":167,"color":[0,25,0]},{"LightNum":222,"color":[0,25,0]},{"LightNum":150,"color":[0,25,0]},{"LightNum":118,"color":[0,0,25]},{"LightNum":195,"color":[0,0,25]}]
     },
     { "RouteName": "Route 13",
       "RouteId": 13,
           "Difficulty": "",
-          "Lights" : [{"LightNum":104,"color":[0,25,0]},{"LightNum":174,"color":[0,25,0]},{"LightNum":100,"color":[0,25,0]},{"LightNum":181,"color":[0,25,0]},{"LightNum":132,"color":[0,25,0]},{"LightNum":150,"color":[0,25,0]},{"LightNum":200,"color":[0,25,0]},{"LightNum":92,"color":[0,0,25]},{"LightNum":190,"color":[0,0,25]},{"LightNum":87,"color":[0,0,25]}]    
+         "Lights" : [{"LightNum":104,"color":[0,25,0]},{"LightNum":171,"color":[0,25,0]},{"LightNum":131,"color":[0,25,0]},{"LightNum":164,"color":[0,25,0]},{"LightNum":200,"color":[0,25,0]},{"LightNum":90,"color":[0,0,25]},{"LightNum":195,"color":[0,0,25]}]
     },
     { "RouteName": "Route 14",
       "RouteId": 14,
           "Difficulty": "",
-          "Lights" : [{"LightNum":176,"color":[0,25,0]},{"LightNum":137,"color":[0,25,0]},{"LightNum":207,"color":[0,25,0]},{"LightNum":167,"color":[0,25,0]},{"LightNum":222,"color":[0,25,0]},{"LightNum":150,"color":[0,25,0]},{"LightNum":118,"color":[0,0,25]},{"LightNum":195,"color":[0,0,25]}]
+         "Lights" : [{"LightNum":104,"color":[0,25,0]},{"LightNum":210,"color":[0,25,0]},{"LightNum":144,"color":[0,25,0]},{"LightNum":244,"color":[0,25,0]},{"LightNum":167,"color":[0,25,0]},{"LightNum":164,"color":[0,25,0]},{"LightNum":222,"color":[0,25,0]},{"LightNum":128,"color":[0,0,25]},{"LightNum":195,"color":[0,0,25]}]
     },
     { "RouteName": "Route 15",
       "RouteId": 15,
           "Difficulty": "",
-         "Lights" : [{"LightNum":104,"color":[0,25,0]},{"LightNum":171,"color":[0,25,0]},{"LightNum":131,"color":[0,25,0]},{"LightNum":164,"color":[0,25,0]},{"LightNum":200,"color":[0,25,0]},{"LightNum":90,"color":[0,0,25]},{"LightNum":195,"color":[0,0,25]}]
-    },
-    { "RouteName": "Route 16",
-      "RouteId": 16,
-          "Difficulty": "",
-         "Lights" : [{"LightNum":104,"color":[0,25,0]},{"LightNum":210,"color":[0,25,0]},{"LightNum":144,"color":[0,25,0]},{"LightNum":244,"color":[0,25,0]},{"LightNum":167,"color":[0,25,0]},{"LightNum":164,"color":[0,25,0]},{"LightNum":222,"color":[0,25,0]},{"LightNum":128,"color":[0,0,25]},{"LightNum":195,"color":[0,0,25]}]
-    },
-    { "RouteName": "Route 17",
-      "RouteId": 17,
-          "Difficulty": "",
-         "Lights" : [{"LightNum":104,"color":[0,25,0]},{"LightNum":143,"color":[0,25,0]},{"LightNum":97,"color":[0,25,0]},{"LightNum":150,"color":[0,25,0]},{"LightNum":92,"color":[0,25,0]},{"LightNum":90,"color":[0,0,25]},{"LightNum":190,"color":[0,0,25]}]
-    },
-    { "RouteName": "Route 18",
-      "RouteId": 18,
-          "Difficulty": "",
          "Lights" : [{"LightNum":212,"color":[0,25,0]},{"LightNum":174,"color":[0,25,0]},{"LightNum":244,"color":[0,25,0]},{"LightNum":146,"color":[0,25,0]},{"LightNum":202,"color":[0,25,0]},{"LightNum":128,"color":[0,25,0]},{"LightNum":195,"color":[0,0,25]}]
-    },
-    { "RouteName": "Route 19",
-      "RouteId": 19,
-          "Difficulty": "",
-         "Lights" : [{"LightNum":212,"color":[0,25,0]},{"LightNum":174,"color":[0,25,0]},{"LightNum":244,"color":[0,25,0]},{"LightNum":170,"color":[0,25,0]},{"LightNum":205,"color":[0,25,0]},{"LightNum":132,"color":[0,25,0]},{"LightNum":128,"color":[0,25,0]},{"LightNum":200,"color":[0,25,0]},{"LightNum":198,"color":[0,0,25]},{"LightNum":118,"color":[0,0,25]},{"LightNum":156,"color":[0,0,25]},{"LightNum":195,"color":[0,0,25]}]
-    },
-    { "RouteName": "Route 20",
-      "RouteId": 20,
-          "Difficulty": "",
-         "Lights" : [{"LightNum":176,"color":[0,25,0]},{"LightNum":137,"color":[0,25,0]},{"LightNum":171,"color":[0,25,0]},{"LightNum":97,"color":[0,25,0]},{"LightNum":150,"color":[0,25,0]},{"LightNum":92,"color":[0,25,0]},{"LightNum":190,"color":[0,0,25]}]
     }
 ]

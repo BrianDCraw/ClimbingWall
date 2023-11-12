@@ -141,7 +141,6 @@ void getRoutes()
 void updateRoutes()
 { 
     String body = server.arg("plain");
-    deserializeJson(jsonDocument, body); 
     String fullpath = "/assets/routes.json";
     File file = SPIFFS.open(fullpath,"w");
     file.println(body);
