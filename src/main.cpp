@@ -13,6 +13,8 @@ WiFiMulti wifiMulti;
 const uint32_t connectTimeoutMs = 10000;
 #define NUM_OF_LEDS 250
 #define PIN 33
+int CurrentRouteIndex;
+int MaxRouteIndex;
  
 // Web server running on port 80
 WebServer server(80);
@@ -20,10 +22,199 @@ WebServer server(80);
 // Neopixel LEDs strip
 Adafruit_NeoPixel pixels(NUM_OF_LEDS, PIN, NEO_RGB + NEO_KHZ800);
 
-// JSON data buffer
-StaticJsonDocument<20000> jsonDocument;
-StaticJsonDocument<20000> fileJson;
-char buffer[8000];
+// JSON dat
+StaticJsonDocument<20000> RequestContent;
+StaticJsonDocument<20000> RoutesFileJson;
+String RoutesFileString;
+
+
+
+
+DynamicJsonDocument getLEDs() {
+  int pixelnumber = 0;
+  String color ;
+  int Red;
+  int Green;
+  int Blue;
+  DynamicJsonDocument LEDS(4000);
+
+  JsonObject article = LEDS.createNestedObject("article");
+  JsonArray lightsJson = article.createNestedArray("lights");
+  uint8_t * lights =  pixels.getPixels();
+
+  for(int i = 0; i<pixels.numPixels() * 3; i= i+3){
+    pixelnumber = i/3;
+    Red = lights[i];
+    Green = lights[i+1];
+    Blue = lights[i+2];
+
+    if (Red + Green + Blue > 0){
+      JsonObject light = lightsJson.createNestedObject();
+      light["LightNum"] = pixelnumber;
+      JsonArray rgb = light.createNestedArray("color");
+      rgb[0] = Red;
+      rgb[1] = Green;
+      rgb[2] = Blue;
+
+    }
+  } 
+  return LEDS;
+}
+
+
+void setLEDs(JsonArray lights) 
+{
+  pixels.clear();
+
+  for(JsonVariant light : lights) {  
+    JsonArray rgb = light["color"];
+    int lightnum = light["LightNum"];
+    int red = rgb[0];
+    int green = rgb[1];
+    int blue = rgb[2];
+  
+     pixels.setPixelColor(lightnum,red,green ,blue);
+  }
+  
+  pixels.show();
+
+}
+
+void setLED(JsonArray rgb, int lightNumber)
+{
+  int red = rgb[0];
+  int green = rgb[1];
+  int blue = rgb[2];
+  pixels.setPixelColor(lightNumber,red,green ,blue);
+  pixels.show();
+}
+
+void LoadRoute(int RouteId)
+{
+  JsonArray routes = RoutesFileJson.as<JsonArray>();
+  
+  for(JsonVariant route : routes) { 
+      if (route["RouteId"] == RouteId) {   
+          JsonArray lights = route["Lights"];
+          setLEDs(lights);
+      }
+  }
+}
+
+//Return List of Routes
+void getRoutesAPI()
+{ 
+    server.send(200, "application/json",RoutesFileString);
+}
+void getCurrentRouteAPI()
+{ 
+   DynamicJsonDocument Routes(4000);
+  JsonObject ReturnObject = Routes.createNestedObject();
+  String ReturnString;
+  ReturnObject["RouteId"] = CurrentRouteIndex;
+  serializeJson(ReturnObject,ReturnString);
+  server.send(200, "application/json",ReturnString) ;
+}
+
+//Update RouteList File
+void updateRoutesAPI()
+{ 
+    String body = server.arg("plain");
+    String fullpath = "/assets/routes.json";
+    File file = SPIFFS.open(fullpath,"w");
+    file.println(body);
+    server.send(200, "application/json", "{Result:Sucess}");
+}
+
+//Load Specific Route by RouteId
+void loadRouteAPI()
+{
+  // Parse input
+  String body = server.arg("plain");
+  deserializeJson(RequestContent, body);
+  CurrentRouteIndex = RequestContent["RouteId"];
+  LoadRoute(CurrentRouteIndex);
+
+  server.send(200, "application/json", "{Result:Sucess}");
+}
+
+void LoadNextRouteApi()
+{
+  if (CurrentRouteIndex != MaxRouteIndex){
+    CurrentRouteIndex++;
+  }
+  else{
+    CurrentRouteIndex = 1;
+  }
+  LoadRoute(CurrentRouteIndex);
+  DynamicJsonDocument Routes(4000);
+  JsonObject ReturnObject = Routes.createNestedObject();
+  String ReturnString;
+  ReturnObject["RouteId"] = CurrentRouteIndex;
+  serializeJson(ReturnObject,ReturnString);
+  server.send(200, "application/json",ReturnString) ;
+}
+void LoadPreviousRouteApi()
+{
+  if (CurrentRouteIndex > 1){
+    CurrentRouteIndex--;
+  }
+  else{
+    CurrentRouteIndex = MaxRouteIndex;
+  }
+  LoadRoute(CurrentRouteIndex);
+  DynamicJsonDocument Routes(4000);
+  JsonObject ReturnObject = Routes.createNestedObject();
+  String ReturnString;
+  ReturnObject["RouteId"] = CurrentRouteIndex;
+  serializeJson(ReturnObject,ReturnString);
+  server.send(200, "application/json",ReturnString) ;
+}
+
+//Set a specific list of lights to replace existing lights 
+void setLEDsAPI() 
+{ 
+  CurrentRouteIndex = 0;
+  String body = server.arg("plain");
+  deserializeJson(RequestContent, body);
+  JsonArray lights = RequestContent["lights"];
+  setLEDs(lights);
+  server.send(200, "application/json", "{Result:Sucess}");
+}
+
+void mirrorRouteAPI() 
+{ 
+  String body = server.arg("plain");
+  deserializeJson(RequestContent, body);
+  JsonArray lights = RequestContent["lights"];
+  setLEDs(lights);
+  server.send(200, "application/json", "{Result:Sucess}");
+}
+
+
+void setLEDAPI()
+{
+  String body = server.arg("plain");
+  deserializeJson(RequestContent, body);
+   JsonArray rgb =  RequestContent["color"];
+  int lightNumber = RequestContent["LightNum"];
+
+  setLED(rgb,lightNumber);
+  server.send(200, "application/json", "{Result:Sucess}");
+}
+
+//get Current LEDs that are on and what color
+void getLEDsAPI()
+{
+  DynamicJsonDocument LedsJson = getLEDs();
+  String LEDs;
+  serializeJson(LedsJson,LEDs);
+  server.send(200, "application/json",LEDs);
+}
+
+
+
+
 
 void handleNotFound()
 {  
@@ -128,111 +319,43 @@ Serial.println("Connecting Wifi...");
   
 }
 
-//Saving a routed sent to this API
-void getRoutes()
-{ 
-    String fullpath = "/assets/routes.json";
-    File file = SPIFFS.open(fullpath,"r");
-    String contents = file.readString(); 
-    file.close();
-    deserializeJson(fileJson, contents);
-    server.send(200, "application/json",contents);
-}
-void updateRoutes()
-{ 
-    String body = server.arg("plain");
-    String fullpath = "/assets/routes.json";
-    File file = SPIFFS.open(fullpath,"w");
-    file.println(body);
-    server.send(200, "application/json", "{Result:Sucess}");
-}
 
-void setLEDs() 
-{
-  pixels.clear();
-  String body = server.arg("plain");
-  deserializeJson(jsonDocument, body);
-  JsonArray lights = jsonDocument["lights"];
 
-  for(JsonVariant light : lights) {  
-    JsonArray rgb = light["color"];
-    int lightnum = light["LightNum"];
-    int red = rgb[0];
-    int green = rgb[1];
-    int blue = rgb[2];
-  
-     pixels.setPixelColor(lightnum,red,green ,blue);
-  }
-  
-  pixels.show();
-
-  // Respond to the client
-  server.send(200, "application/json", "{Result:Sucess}");
-}
-
-void setLED()
-{
-  String body = server.arg("plain");
-  deserializeJson(jsonDocument, body);
-  JsonArray rgb =  jsonDocument["color"];
-  int lightNumber = jsonDocument["LightNum"];
-  int red = rgb[0];
-  int green = rgb[1];
-  int blue = rgb[2];
-  pixels.setPixelColor(lightNumber,red,green ,blue);
-  pixels.show();
-  server.send(200, "application/json", "{Result:Sucess}");
-}
-
-void getLEDs()
-{
-  String jsonoutput;
-  int pixelnumber = 0;
-  String color ;
-  int Red;
-  int Green;
-  int Blue;
-
-  DynamicJsonDocument doc(4000);
-  JsonObject article = doc.createNestedObject("article");
-  JsonArray lightsJson = article.createNestedArray("lights");
-  uint8_t * lights =  pixels.getPixels();
-
-  for(int i = 0; i<pixels.numPixels() * 3; i= i+3){
-    pixelnumber = i/3;
-    Red = lights[i];
-    Green = lights[i+1];
-    Blue = lights[i+2];
-
-    if (Red + Green + Blue > 0){
-      JsonObject light = lightsJson.createNestedObject();
-      light["LightNum"] = pixelnumber;
-      JsonArray rgb = light.createNestedArray("color");
-      rgb[0] = Red;
-      rgb[1] = Green;
-      rgb[2] = Blue;
-
-    }
-  } 
-
-  serializeJson(doc,jsonoutput);
-  server.send(200, "application/json",jsonoutput);
-}
- 
 // setup API resources
 void setup_routing() {
-  server.on("/setLEDs", HTTP_POST, setLEDs);
-  server.on("/getLights",HTTP_GET, getLEDs);
-  server.on("/setLED",HTTP_POST,setLED);
-  server.on("/getRoutes", HTTP_GET, getRoutes);
-  server.on("/updateRoutes", HTTP_POST, updateRoutes);
+  server.on("/setLEDs", HTTP_POST, setLEDsAPI);
+  server.on("/getLights",HTTP_GET, getLEDsAPI);
+  server.on("/setLED",HTTP_POST,setLEDAPI);
+  server.on("/getRoutes", HTTP_GET, getRoutesAPI);
+  server.on("/updateRoutes", HTTP_POST, updateRoutesAPI);
+  server.on("/nextRoute", HTTP_POST, LoadNextRouteApi );
+  server.on("/prevRoute", HTTP_POST, LoadPreviousRouteApi);
+  server.on("/loadRoute", HTTP_POST, loadRouteAPI);
+  server.on("/getCurrentRoute",HTTP_GET, getCurrentRouteAPI);
+  server.on("/mirrorRoute",HTTP_POST,mirrorRouteAPI);
   // start server
   server.onNotFound(handleNotFound);
   server.enableCrossOrigin(true);
   server.begin();
 }
 
-  
+ void loadRoutesFile()
+ {
+    String fullpath = "/assets/routes.json";
+    File file = SPIFFS.open(fullpath,"r");
+    RoutesFileString = file.readString(); 
+    file.close();
+    deserializeJson(RoutesFileJson, RoutesFileString);
+
+   JsonArray routes = RoutesFileJson.as<JsonArray>();
+   MaxRouteIndex = 0;
+
+  for(JsonVariant route : routes) { 
+      if (route["RouteId"] > MaxRouteIndex) {   
+          MaxRouteIndex = route["RouteId"];
+      }
+  }
+ } 
 
 
 void setup() 
@@ -245,6 +368,9 @@ void setup()
   connectToWiFi();
   setup_routing();  
 
+  //Load Routelist
+  loadRoutesFile();
+  CurrentRouteIndex = 0;
   // Initialize Neopixel
   pixels.begin();
   pixels.clear();
