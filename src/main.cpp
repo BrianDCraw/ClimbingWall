@@ -15,10 +15,8 @@ const uint32_t connectTimeoutMs = 10000;
 #define PIN 33
 int CurrentRouteIndex;
 int MaxRouteIndex;
- 
 // Web server running on port 80
 WebServer server(80);
-
 // Neopixel LEDs strip
 Adafruit_NeoPixel pixels(NUM_OF_LEDS, PIN, NEO_RGB + NEO_KHZ800);
 
@@ -100,7 +98,6 @@ void LoadRoute(int RouteId)
       }
   }
 }
-
 //Return List of Routes
 void getRoutesAPI()
 { 
@@ -129,12 +126,10 @@ void updateRoutesAPI()
 //Load Specific Route by RouteId
 void loadRouteAPI()
 {
-  // Parse input
   String body = server.arg("plain");
   deserializeJson(RequestContent, body);
   CurrentRouteIndex = RequestContent["RouteId"];
   LoadRoute(CurrentRouteIndex);
-
   server.send(200, "application/json", "{Result:Sucess}");
 }
 
@@ -169,17 +164,6 @@ void LoadPreviousRouteApi()
   ReturnObject["RouteId"] = CurrentRouteIndex;
   serializeJson(ReturnObject,ReturnString);
   server.send(200, "application/json",ReturnString) ;
-}
-
-//Set a specific list of lights to replace existing lights 
-void setLEDsAPI() 
-{ 
-  CurrentRouteIndex = 0;
-  String body = server.arg("plain");
-  deserializeJson(RequestContent, body);
-  JsonArray lights = RequestContent["lights"];
-  setLEDs(lights);
-  server.send(200, "application/json", "{Result:Sucess}");
 }
 
 void mirrorRouteAPI() 
@@ -323,7 +307,6 @@ Serial.println("Connecting Wifi...");
 
 // setup API resources
 void setup_routing() {
-  server.on("/setLEDs", HTTP_POST, setLEDsAPI);
   server.on("/getLights",HTTP_GET, getLEDsAPI);
   server.on("/setLED",HTTP_POST,setLEDAPI);
   server.on("/getRoutes", HTTP_GET, getRoutesAPI);
