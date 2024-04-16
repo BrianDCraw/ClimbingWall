@@ -8,84 +8,21 @@
 #include <Wire.h>
 #include <Adafruit_NeoPixel.h>
 #include <ArduinoOTA.h>
+#include <WallLeds.h>
 
 WiFiMulti wifiMulti;
 const uint32_t connectTimeoutMs = 10000;
-#define NUM_OF_LEDS 250
-#define PIN 33
 int CurrentRouteIndex;
 int MaxRouteIndex;
 // Web server running on port 80
 WebServer server(80);
 // Neopixel LEDs strip
-Adafruit_NeoPixel pixels(NUM_OF_LEDS, PIN, NEO_RGB + NEO_KHZ800);
-
+WallLeds WallFunctions;
 // JSON dat
-StaticJsonDocument<20000> RequestContent;
-StaticJsonDocument<20000> RoutesFileJson;
+JsonDocument RequestContent;
+JsonDocument RoutesFileJson;
 String RoutesFileString;
 
-
-
-
-DynamicJsonDocument getLEDs() {
-  int pixelnumber = 0;
-  String color ;
-  int Red;
-  int Green;
-  int Blue;
-  DynamicJsonDocument LEDS(4000);
-
-  JsonObject article = LEDS.createNestedObject("article");
-  JsonArray lightsJson = article.createNestedArray("lights");
-  uint8_t * lights =  pixels.getPixels();
-
-  for(int i = 0; i<pixels.numPixels() * 3; i= i+3){
-    pixelnumber = i/3;
-    Red = lights[i];
-    Green = lights[i+1];
-    Blue = lights[i+2];
-
-    if (Red + Green + Blue > 0){
-      JsonObject light = lightsJson.createNestedObject();
-      light["LightNum"] = pixelnumber;
-      JsonArray rgb = light.createNestedArray("color");
-      rgb[0] = Red;
-      rgb[1] = Green;
-      rgb[2] = Blue;
-
-    }
-  } 
-  return LEDS;
-}
-
-
-void setLEDs(JsonArray lights) 
-{
-  pixels.clear();
-
-  for(JsonVariant light : lights) {  
-    JsonArray rgb = light["color"];
-    int lightnum = light["LightNum"];
-    int red = rgb[0];
-    int green = rgb[1];
-    int blue = rgb[2];
-  
-     pixels.setPixelColor(lightnum,red,green ,blue);
-  }
-  
-  pixels.show();
-
-}
-
-void setLED(JsonArray rgb, int lightNumber)
-{
-  int red = rgb[0];
-  int green = rgb[1];
-  int blue = rgb[2];
-  pixels.setPixelColor(lightNumber,red,green ,blue);
-  pixels.show();
-}
 
 void LoadRoute(int RouteId)
 {
@@ -94,7 +31,7 @@ void LoadRoute(int RouteId)
   for(JsonVariant route : routes) { 
       if (route["RouteId"] == RouteId) {   
           JsonArray lights = route["Lights"];
-          setLEDs(lights);
+          WallFunctions.setLEDs(lights);
       }
   }
 }
@@ -169,7 +106,7 @@ void mirrorRouteAPI()
   String body = server.arg("plain");
   deserializeJson(RequestContent, body);
   JsonArray lights = RequestContent["lights"];
-  setLEDs(lights);
+  WallFunctions.setLEDs(lights);
   server.send(200, "application/json", "{Result:Sucess}");
 }
 
@@ -179,15 +116,14 @@ void setLEDAPI()
   deserializeJson(RequestContent, body);
    JsonArray rgb =  RequestContent["color"];
   int lightNumber = RequestContent["LightNum"];
-
-  setLED(rgb,lightNumber);
+  WallFunctions.setLED(rgb,lightNumber);
   server.send(200, "application/json", "{Result:Sucess}");
 }
 
 //get Current LEDs that are on and what color
 void getLEDsAPI()
 {
-  DynamicJsonDocument LedsJson = getLEDs();
+  JsonDocument LedsJson = WallFunctions.getLEDs();
   String LEDs;
   serializeJson(LedsJson,LEDs);
   server.send(200, "application/json",LEDs);
@@ -347,10 +283,8 @@ void setup()
   loadRoutesFile();
   CurrentRouteIndex = 0;
   // Initialize Neopixel
-  pixels.begin();
-  pixels.clear();
-  pixels.show();
-  
+  WallFunctions.initalizePixels();
+
   ArduinoOTA
     .onStart([]() {
       String type;
