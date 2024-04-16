@@ -105,11 +105,10 @@ void getRoutesAPI()
 }
 void getCurrentRouteAPI()
 { 
-   DynamicJsonDocument Routes(4000);
-  JsonObject ReturnObject = Routes.createNestedObject();
+  JsonDocument Routes;
   String ReturnString;
-  ReturnObject["RouteId"] = CurrentRouteIndex;
-  serializeJson(ReturnObject,ReturnString);
+  Routes["RouteId"] = CurrentRouteIndex;
+  serializeJson(Routes,ReturnString);
   server.send(200, "application/json",ReturnString) ;
 }
 
@@ -119,6 +118,7 @@ void updateRoutesAPI()
     String body = server.arg("plain");
     String fullpath = "/assets/routes.json";
     File file = SPIFFS.open(fullpath,"w");
+    RoutesFileString = body;
     file.println(body);
     server.send(200, "application/json", "{Result:Sucess}");
 }
@@ -142,11 +142,10 @@ void LoadNextRouteApi()
     CurrentRouteIndex = 1;
   }
   LoadRoute(CurrentRouteIndex);
-  DynamicJsonDocument Routes(4000);
-  JsonObject ReturnObject = Routes.createNestedObject();
+  JsonDocument Routes;
   String ReturnString;
-  ReturnObject["RouteId"] = CurrentRouteIndex;
-  serializeJson(ReturnObject,ReturnString);
+  Routes["RouteId"] = CurrentRouteIndex;
+  serializeJson(Routes,ReturnString);
   server.send(200, "application/json",ReturnString) ;
 }
 void LoadPreviousRouteApi()
@@ -158,11 +157,10 @@ void LoadPreviousRouteApi()
     CurrentRouteIndex = MaxRouteIndex;
   }
   LoadRoute(CurrentRouteIndex);
-  DynamicJsonDocument Routes(4000);
-  JsonObject ReturnObject = Routes.createNestedObject();
+  JsonDocument Routes;
   String ReturnString;
-  ReturnObject["RouteId"] = CurrentRouteIndex;
-  serializeJson(ReturnObject,ReturnString);
+  Routes["RouteId"] = CurrentRouteIndex;
+  serializeJson(Routes,ReturnString);
   server.send(200, "application/json",ReturnString) ;
 }
 
@@ -174,7 +172,6 @@ void mirrorRouteAPI()
   setLEDs(lights);
   server.send(200, "application/json", "{Result:Sucess}");
 }
-
 
 void setLEDAPI()
 {
@@ -197,9 +194,6 @@ void getLEDsAPI()
 }
 
 
-
-
-
 void handleNotFound()
 {  
   String path = server.uri();
@@ -215,7 +209,7 @@ void handleNotFound()
   } else if (path.endsWith(".css")) {
     dataType = "text/css";
   } else if (path.endsWith(".js")) {
-    dataType = "application/javascript";
+    dataType = "text/javascript";
   } else if (path.endsWith(".png")) {
     dataType = "image/png";
   } else if (path.endsWith(".gif")) {
@@ -241,17 +235,15 @@ void handleNotFound()
     return;
   }
 
-  if (dataFile.isDirectory()) {
-    path += "/index.htm";
-    dataType = "text/html";
-    dataFile = SPIFFS.open(path.c_str());
-  }
-
   if (server.hasArg("download")) {
     dataType = "application/octet-stream";
   }
 
-  if (server.streamFile(dataFile, dataType) != dataFile.size()) {
+  //stream file 
+   size_t streamsize;
+   streamsize = server.streamFile(dataFile, dataType);
+
+  if (streamsize != dataFile.size()) {
     Serial.println("Sent less data than expected!");
   }
 
