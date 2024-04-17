@@ -9,54 +9,41 @@
 #include <Adafruit_NeoPixel.h>
 #include <ArduinoOTA.h>
 #include <WallLeds.h>
+#include <Routes.h>
+#include <PathFunctions.h>
 
 WiFiMulti wifiMulti;
 const uint32_t connectTimeoutMs = 10000;
-int CurrentRouteIndex;
-int MaxRouteIndex;
-// Web server running on port 80
 WebServer server(80);
-// Neopixel LEDs strip
+ArduinoOTAClass OTA; 
 WallLeds WallFunctions;
-// JSON dat
+PathFunctions pathFunc;
+Routes RoutesFunction;
 JsonDocument RequestContent;
-JsonDocument RoutesFileJson;
-String RoutesFileString;
-
 
 void LoadRoute(int RouteId)
 {
-  JsonArray routes = RoutesFileJson.as<JsonArray>();
-  
-  for(JsonVariant route : routes) { 
-      if (route["RouteId"] == RouteId) {   
-          JsonArray lights = route["Lights"];
-          WallFunctions.setLEDs(lights);
-      }
-  }
+    JsonArray lights = RoutesFunction.getLightsForRoute(RouteId);
+    WallFunctions.setLEDs(lights);
 }
 //Return List of Routes
 void getRoutesAPI()
 { 
-    server.send(200, "application/json",RoutesFileString);
+  JsonDocument routes = RoutesFunction.getallRoutes();
+  String RoutesFileString;
+  serializeJson(routes,RoutesFileString);
+  server.send(200, "application/json",RoutesFileString);
 }
 void getCurrentRouteAPI()
 { 
-  JsonDocument Routes;
-  String ReturnString;
-  Routes["RouteId"] = CurrentRouteIndex;
-  serializeJson(Routes,ReturnString);
+  String ReturnString = RoutesFunction.getCurrentRouteIdAsString();
   server.send(200, "application/json",ReturnString) ;
 }
-
 //Update RouteList File
 void updateRoutesAPI()
 { 
     String body = server.arg("plain");
-    String fullpath = "/assets/routes.json";
-    File file = SPIFFS.open(fullpath,"w");
-    RoutesFileString = body;
-    file.println(body);
+    RoutesFunction.saveAllRoutes(body);
     server.send(200, "application/json", "{Result:Sucess}");
 }
 
@@ -65,41 +52,21 @@ void loadRouteAPI()
 {
   String body = server.arg("plain");
   deserializeJson(RequestContent, body);
-  CurrentRouteIndex = RequestContent["RouteId"];
-  LoadRoute(CurrentRouteIndex);
+  LoadRoute(RequestContent["RouteId"]);
   server.send(200, "application/json", "{Result:Sucess}");
 }
 
 void LoadNextRouteApi()
 {
-  if (CurrentRouteIndex != MaxRouteIndex){
-    CurrentRouteIndex++;
-  }
-  else{
-    CurrentRouteIndex = 1;
-  }
-  LoadRoute(CurrentRouteIndex);
-  JsonDocument Routes;
-  String ReturnString;
-  Routes["RouteId"] = CurrentRouteIndex;
-  serializeJson(Routes,ReturnString);
+  String ReturnString = RoutesFunction.getNextRouteIdAsString();
   server.send(200, "application/json",ReturnString) ;
 }
 void LoadPreviousRouteApi()
 {
-  if (CurrentRouteIndex > 1){
-    CurrentRouteIndex--;
-  }
-  else{
-    CurrentRouteIndex = MaxRouteIndex;
-  }
-  LoadRoute(CurrentRouteIndex);
-  JsonDocument Routes;
-  String ReturnString;
-  Routes["RouteId"] = CurrentRouteIndex;
-  serializeJson(Routes,ReturnString);
+  String ReturnString = RoutesFunction.getPreviousRouteIdAsString();
   server.send(200, "application/json",ReturnString) ;
 }
+
 
 void mirrorRouteAPI() 
 { 
@@ -129,60 +96,22 @@ void getLEDsAPI()
   server.send(200, "application/json",LEDs);
 }
 
-
 void handleNotFound()
 {  
-  String path = server.uri();
-  String dataType = "text/plain";
-  if (path.endsWith("/")) {
-    path += "index.html";
-  }
-     Serial.println(path);
-  if (path.endsWith(".src")) {
-    path = path.substring(0, path.lastIndexOf("."));
-  } else if (path.endsWith(".html")) {
-    dataType = "text/html";
-  } else if (path.endsWith(".css")) {
-    dataType = "text/css";
-  } else if (path.endsWith(".js")) {
-    dataType = "text/javascript";
-  } else if (path.endsWith(".png")) {
-    dataType = "image/png";
-  } else if (path.endsWith(".gif")) {
-    dataType = "image/gif";
-  } else if (path.endsWith(".jpg")) {
-    dataType = "image/jpeg";
-  } else if (path.endsWith(".ico")) {
-    dataType = "image/x-icon";
-  } else if (path.endsWith(".xml")) {
-    dataType = "text/xml";
-  } else if (path.endsWith(".pdf")) {
-    dataType = "application/pdf";
-  } else if (path.endsWith(".zip")) {
-    dataType = "application/zip";
-  }
-
+  String path = pathFunc.GetCleanPath(server.uri());
+  String dataType = pathFunc.GetFileType(path);
   File dataFile = SPIFFS.open(path.c_str());
-
-  bool isfile = dataFile.available();
 
   if (!dataFile.available()){
     server.send(200,"text/html","File Not Found");
     return;
   }
-
-  if (server.hasArg("download")) {
-    dataType = "application/octet-stream";
-  }
-
   //stream file 
-   size_t streamsize;
-   streamsize = server.streamFile(dataFile, dataType);
+   size_t streamsize = server.streamFile(dataFile, dataType);;
 
   if (streamsize != dataFile.size()) {
     Serial.println("Sent less data than expected!");
   }
-
   dataFile.close();
   return;
 }
@@ -195,7 +124,7 @@ void connectToWiFi()
   wifiMulti.addAP("JBHomeAP", "n0ne5ha11pa55");
   wifiMulti.addAP("JBHome5GAP", "n0ne5ha11pa55");
   
-Serial.println("Connecting Wifi...");
+  Serial.println("Connecting Wifi...");
    
    // start process by blinking onboard light to show its trying to connect
    for(byte i = 0; i < 5; i++){
@@ -215,8 +144,8 @@ Serial.println("Connecting Wifi...");
     digitalWrite(2,HIGH);
     Serial.println("");
     Serial.println("WiFi connected");
-    Serial.println("IP address:");
-    Serial.print(WiFi.localIP());
+    Serial.print("IP address:");
+    Serial.println(WiFi.localIP());
   } //If not connected blink LED faster than before and print WIFI not connect
   else {
        for(byte i = 0; i < 15; i++){
@@ -230,65 +159,12 @@ Serial.println("Connecting Wifi...");
   }
   
 }
-
-
-
-// setup API resources
-void setup_routing() {
-  server.on("/getLights",HTTP_GET, getLEDsAPI);
-  server.on("/setLED",HTTP_POST,setLEDAPI);
-  server.on("/getRoutes", HTTP_GET, getRoutesAPI);
-  server.on("/updateRoutes", HTTP_POST, updateRoutesAPI);
-  server.on("/nextRoute", HTTP_POST, LoadNextRouteApi );
-  server.on("/prevRoute", HTTP_POST, LoadPreviousRouteApi);
-  server.on("/loadRoute", HTTP_POST, loadRouteAPI);
-  server.on("/getCurrentRoute",HTTP_GET, getCurrentRouteAPI);
-  server.on("/mirrorRoute",HTTP_POST,mirrorRouteAPI);
-  // start server
-  server.onNotFound(handleNotFound);
-  server.enableCrossOrigin(true);
-  server.begin();
-}
-
- void loadRoutesFile()
- {
-    String fullpath = "/assets/routes.json";
-    File file = SPIFFS.open(fullpath,"r");
-    RoutesFileString = file.readString(); 
-    file.close();
-    deserializeJson(RoutesFileJson, RoutesFileString);
-
-   JsonArray routes = RoutesFileJson.as<JsonArray>();
-   MaxRouteIndex = 0;
-
-  for(JsonVariant route : routes) { 
-      if (route["RouteId"] > MaxRouteIndex) {   
-          MaxRouteIndex = route["RouteId"];
-      }
-  }
- } 
-
-
-void setup() 
+void startupOTA()
 {
-  SPIFFS.begin(true); //intialize file system
-  pinMode(2,OUTPUT) ; //used to intialize the onboard LED GPO02 pin as output
-
-  Serial.begin(9600);
-  Serial.print("StartUp Beginning");
-  connectToWiFi();
-  setup_routing();  
-
-  //Load Routelist
-  loadRoutesFile();
-  CurrentRouteIndex = 0;
-  // Initialize Neopixel
-  WallFunctions.initalizePixels();
-
-  ArduinoOTA
+   OTA
     .onStart([]() {
       String type;
-      if (ArduinoOTA.getCommand() == U_FLASH)
+      if (OTA.getCommand() == U_FLASH)
         type = "sketch";
       else // U_SPIFFS
         type = "filesystem";
@@ -311,21 +187,48 @@ void setup()
       else if (error == OTA_END_ERROR) Serial.println("End Failed");
     });
 
-  ArduinoOTA.begin();
-
-  Serial.println("Ready");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  OTA.begin();
 }
 
- 
+// setup API resources
+void setup_routing() {
+  server.on("/getLights",HTTP_GET, getLEDsAPI);
+  server.on("/setLED",HTTP_POST,setLEDAPI);
+  server.on("/getRoutes", HTTP_GET, getRoutesAPI);
+  server.on("/updateRoutes", HTTP_POST, updateRoutesAPI);
+  server.on("/nextRoute", HTTP_POST, LoadNextRouteApi );
+  server.on("/prevRoute", HTTP_POST, LoadPreviousRouteApi);
+  server.on("/loadRoute", HTTP_POST, loadRouteAPI);
+  server.on("/getCurrentRoute",HTTP_GET, getCurrentRouteAPI);
+  server.on("/mirrorRoute",HTTP_POST,mirrorRouteAPI);
+  // start server
+  server.onNotFound(handleNotFound);
+  server.enableCrossOrigin(true);
+  server.begin();
+}
+
+void setup() 
+{
+  SPIFFS.begin(true); //intialize file system
+  pinMode(2,OUTPUT) ; //used to intialize the onboard LED GPO02 pin as output
+  Serial.begin(9600);
+  Serial.println("StartUp Beginning");
+  connectToWiFi();
+  startupOTA();
+  setup_routing();  
+  RoutesFunction.loadRoutesFile();
+  WallFunctions.initalizePixels();
+  Serial.println("Controller Loaded");
+
+}
+
 void loop() 
 {
   server.handleClient();
+  OTA.handle();
    //reconnect to wifi if not connected
   if (WiFi.status() != WL_CONNECTED) {
        connectToWiFi();
   }
-    ArduinoOTA.handle();
-}
 
+}
